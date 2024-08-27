@@ -127,7 +127,7 @@ Return modified messages."
 ;;; Remote API calls
 ;;; -----------------------------------------------------------------------------
 
-(defn/a edit [text instruction #** kwargs]
+(defn :async edit [text instruction #** kwargs]
   "Follow an instruction. Now uses the chat endpoint because the edit one is to be deprecated.
 `text`: The input text to use as a starting point for the edit.
 `instruction`: how the model should edit the prompt."
@@ -136,7 +136,7 @@ Return modified messages."
       (respond #** kwargs)
       (await)))
 
-(defn/a _openai [params messages]
+(defn :async _openai [params messages]
   "Openai-compatible API calls: https://platform.openai.com/docs/api-reference"
   (let [client (AsyncOpenAI :api-key (.pop params "api_key")
                             :base_url (.pop params "api_base"))
@@ -149,7 +149,7 @@ Return modified messages."
         (. message)
         (. content))))
 
-(defn/a _replicate [params messages]
+(defn :async _replicate [params messages]
   "Replicate-compatible API calls: https://replicate.com/docs"
   (.pop params "api_key" None)
   ;(log.info f"params {params}") 
@@ -174,7 +174,7 @@ Return modified messages."
         response
         (.join "" response))))
 
-(defn/a [(retry :wait (wait-random-exponential :min 0.5 :max 30) :stop (stop-after-attempt 6))]
+(defn :async [(retry :wait (wait-random-exponential :min 0.5 :max 30) :stop (stop-after-attempt 6))]
   respond [messages #** kwargs]
   "Reply to a list of messages and return just content.
 The messages should already have the standard roles."
@@ -192,7 +192,7 @@ The messages should already have the standard roles."
            "openai"    (await (_openai params messages))
            _           (await (_openai params messages)))))
 
-(defn/a chat [messages #** kwargs] ; -> message
+(defn :async chat [messages #** kwargs] ; -> message
   "An assistant response (message) to a list of messages.
 The messages should already have the standard roles."
   (-> (respond messages #** kwargs)
@@ -203,28 +203,28 @@ The messages should already have the standard roles."
 ;;; Prompts over messages -> text
 ;;; -----------------------------------------------------------------------------
 
-(defn/a msgs->topic [messages]
+(defn :async msgs->topic [messages]
   "Create a topic summary from messages."
   (await (respond [(system "Your sole purpose is to express the topic of conversation in one short sentence.")
                    #* messages
                    (user "Summarize the topic of conversation before now in as few words as possible.")
                    (assistant "The topic is as follows:")])))
 
-(defn/a msgs->points [messages]
+(defn :async msgs->points [messages]
   "Create bullet points from messages."
   (await (respond [(system "Your sole purpose is to summarize the conversation into bullet points.")
                    #* messages
                    (user "Summarize this conversation before now as a markdown list, preserving the most interesting, pertinent and important points.")
                    (assistant "The main points are as follows:")])))
 
-(defn/a msgs->summary [messages]
+(defn :async msgs->summary [messages]
   "Create summary from messages."
   (await (respond [(system "You are a helpful assistant who follows instructions carefully.")
                    #* messages
                    (user "Please edit down the conversation before now into a single concise paragraph, preserving the most interesting, pertinent and important points.")
                    (assistant "The summary is as follows:")])))
 
-(defn/a text&msgs->reply [messages context query]
+(defn :async text&msgs->reply [messages context query]
   "Respond in the context of messages and text.
 The text should not be so long as to cause context length problems, so summarise it first if necessary."
   (await (respond [(system "You are a helpful assistant who follows instructions carefully.")
@@ -234,7 +234,7 @@ The text should not be so long as to cause context length problems, so summarise
 Consider the following additional context before responding:
 {context}")])))
 
-(defn/a yes-no [messages context query]
+(defn :async yes-no [messages context query]
   "Respond with yes or no to a query."
   (let [response (await (respond [(system "Reply to the query with either 'yes' or 'no' as best you can based on the context and conversation.
 Below is the conversation or story.")
@@ -250,7 +250,7 @@ Respond with only one word, either 'yes' or 'no'.")
     (or (similar response "yes")
         (in "yes" (.lower response)))))
 
-(defn/a complete-json [template instruction context [max-tokens 600]]
+(defn :async complete-json [template instruction context [max-tokens 600]]
   "Fill in a JSON template according to context. Return list, dict or None.
 JSON completion is a bit unreliable, depending on the model."
   (let [messages [(system "You will be given a JSON template to complete. You must stick very closely to the format of the template.")
@@ -271,7 +271,7 @@ JSON completion is a bit unreliable, depending on the model."
       (except [json.decoder.JSONDecodeError]
         (log.error f"bad JSON creation, can't decode:\n{response}")))))
 
-(defn/a complete-lines [template instruction context attributes [max-tokens 600]]
+(defn :async complete-lines [template instruction context attributes [max-tokens 600]]
   "Fill in a template according to context, one per line. Return dict or None.
 Provided `attributes` should be a list of strings.
 Format is as
@@ -291,7 +291,7 @@ Give one attribute per line, no commentary, examples or other notes, just the te
 ;;; Prompts over paragraphs of text -> text
 ;;; -----------------------------------------------------------------------------
 
-(defn/a text->topic [text]
+(defn :async text->topic [text]
   "Create a topic summary from text."
   (await (respond [(system "You are a helpful assistant who follows instructions carefully.")
                    (user f"Please express the topic of the following text in as few words as possible:
@@ -299,7 +299,7 @@ Give one attribute per line, no commentary, examples or other notes, just the te
 {text}")
                    (assistant "The topic is as follows:")])))
 
-(defn/a text->points [text]
+(defn :async text->points [text]
   "Create bullet points from text."
   (await (respond [(system "You are a helpful assistant who follows instructions carefully.")
                    (user f"Summarize the following text as a list of bullet points, preserving the most interesting, pertinent and important points.
@@ -307,7 +307,7 @@ Give one attribute per line, no commentary, examples or other notes, just the te
 {text}")
                    (assistant "The points are as follows:")])))
 
-(defn/a text->summary [text]
+(defn :async text->summary [text]
   "Create short summary from text."
   (await (respond [(system "You are a helpful assistant who follows instructions carefully.")
                    (user f"Please concisely rewrite the following text, preserving the most interesting, pertinent and important points.
@@ -315,7 +315,7 @@ Give one attribute per line, no commentary, examples or other notes, just the te
 {text}")
                    (assistant "The summary is as follows:")])))
 
-(defn/a text->extract [query text]
+(defn :async text->extract [query text]
   "Extract points relevant to a query from text."
   (await (respond [(system "You are a helpful assistant who follows instructions carefully.")
                    (user f"{query}

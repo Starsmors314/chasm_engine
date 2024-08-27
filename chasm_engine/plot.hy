@@ -48,7 +48,7 @@ Develop the plot / world events
                               :n n
                               :where (when class {"classification" class})))))
 
-(defn/a extract-point [messages player]
+(defn :async extract-point [messages player]
   "Scan the recent conversation for plot points and insert them into the record."
   (let [msgs (truncate (cut messages -6 None) :spare-length 200)
         narrative (format-msgs (msgs->dlg "narrative" player.name msgs))

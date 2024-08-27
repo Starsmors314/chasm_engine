@@ -48,7 +48,7 @@ See documentation:
 
 ;;; -----------------------------------------------------------------------------
 
-(defn/a send [zmsg]
+(defn :async send [zmsg]
   (try
     (await (.send-multipart frontend zmsg))
     (except [zmq.EAGAIN]
@@ -82,7 +82,7 @@ See documentation:
       (< diff threshold))
     (except [ValueError])))
 
-(defn/a handoff-request [player-name client-time method #* args #** kwargs]
+(defn :async handoff-request [player-name client-time method #* args #** kwargs]
   "Process the RPC in the engine and send the result."
   (let [account (get-account player-name)]
     (update-account player-name :last-verified client-time)
@@ -92,7 +92,7 @@ See documentation:
            "motd" (engine.motd #* args #** kwargs)
            "null" (engine.null #* args #** kwargs))))
 
-(defn/a handle-frames [frames]
+(defn :async handle-frames [frames]
   "Unwrap, verify an incoming message."
   (let [[q ident z zmsg] frames
         msg (unwrap zmsg) ; no messages will raise zmq.Again
@@ -108,7 +108,7 @@ See documentation:
     (log.debug f"{msg}")
     (await (send [q ident z (wrap response)]))))
 
-(defn/a server-loop [[n 0]]
+(defn :async server-loop [[n 0]]
   "Call a method on the server."
   (while True
     (try
@@ -120,7 +120,7 @@ See documentation:
       (except [err [Exception]]
         (log.error f"server-loop {n} error:" :exception err)))))
 
-(defn/a background-loop []
+(defn :async background-loop []
   "Background service tasks."
   (print "Initial map generation...")
   (await (engine.init))
@@ -136,7 +136,7 @@ See documentation:
       (except [err [Exception]]
         (log.error "background-loop exception" :exception err)))))
 
-(defn/a serve []
+(defn :async serve []
   (print f"Starting server at {(.isoformat (datetime.today))} for {config-file}")
   (log.info f"Starting server for {config-file}")
   (let [tasks (lfor n (range N_CONCURRENT_CLIENTS) (asyncio.create-task (server-loop n)))
