@@ -31,6 +31,8 @@ See documentation:
 
 ;;; -----------------------------------------------------------------------------
 
+(.set_event_loop_policy asyncio (asyncio.WindowsSelectorEventLoopPolicy))
+
 (setv context (zmq.asyncio.Context))
 
 (defn start-router-socket [address]
