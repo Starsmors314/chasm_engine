@@ -10,7 +10,7 @@ Functions that manage place.
 (import chasm_engine [log])
 
 (import chasm_engine.stdlib *)
-(import chasm_engine.constants [compass-directions alphanumeric place-types place-attributes])
+(import chasm_engine.constants [compass-directions alphabet place-types place-attributes])
 (import chasm_engine.state [world get-place set-place update-place])
 (import chasm_engine.types [Coords Place])
 (import chasm_engine.chat [respond complete-json complete-lines msgs->dlg
@@ -91,7 +91,7 @@ The protagonist's new location is 'The {place.name}', with attributes:
 
 (defn :async gen-json [nearby-places]
   "Make up a place from its neighbours."
-  (let [seed (choice alphanumeric)
+  (let [seed (choice alphabet)
         template f"{{
     \"name\": \"an imaginative and original place name\",
     \"appearance\": \"a few keywords\",
@@ -115,7 +115,7 @@ The name should have {seed} in the first few letters. The place might be {(choic
 
 (defn :async gen-lines [nearby-places]
   "Make up a place from its neighbours."
-  (let [seed (choice alphanumeric)
+  (let [seed (choice alphabet)
         context f"The story's setting is: {world}
 Nearby places: {nearby-places}"
         template "name: substitute an imaginative and original place name
