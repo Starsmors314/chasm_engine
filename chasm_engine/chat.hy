@@ -138,16 +138,15 @@ Return modified messages."
 
 (defn :async _openai [params messages]
   "Openai-compatible API calls: https://platform.openai.com/docs/api-reference"
-  (let [client (AsyncOpenAI :api-key (.pop params "api_key")
-                            :base_url (.pop params "api_base"))
-        response (await
+  (setv client (AsyncOpenAI :api-key (.pop params "api_key")
+                            :base_url (.pop params "api_base")))
+  (setv response (await
                    (client.chat.completions.create
                      :messages (standard-roles messages)
-                     #** params))]
-    (-> response.choices
-        (first)
-        (. message)
-        (. content))))
+                     #** params)))
+  (setv choices (. response choices))
+  (setv choice (first choices))
+  (. choice message content))
 
 (defn :async _replicate [params messages]
   "Replicate-compatible API calls: https://replicate.com/docs"
